@@ -20,7 +20,7 @@ def hash_password(password: str) -> str:
 
 # Verify hashed password
 def verify_password(password: str, hashed_password: str) -> bool:
-    return bcrypt.checkpw(password.encode('utf-8'), hashed_password)
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # Generate JWT Token
 def generate_token(user_id: str) -> str:
