@@ -3,11 +3,15 @@ from transformers import pipeline
 from datetime import datetime
 from db import chat_history_collection
 
+# Ensure GPU is available
+# if not torch.cuda.is_available():
+#     raise RuntimeError("No GPU found! Please enable GPU in runtime settings.")
+
 pipe = pipeline(
     "text-generation",
     model="TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-    torch_dtype=torch.bfloat16,
-    device_map="auto"
+    torch_dtype=torch.bfloat16,  
+    device_map="auto"  # ✅ Correct way to use GPU
 )
 
 def clean_response(response_text):

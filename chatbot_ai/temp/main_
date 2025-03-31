@@ -1,0 +1,156 @@
+from auth import register_user, login_user
+from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from chatbot import chatter
+from auth import get_current_user
+from db import users_collection, sessions_collection, chat_history_collection
+from datetime import datetime
+import uuid
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+class ChatInput(BaseModel):
+    input: str
+
+class RegisterUser(BaseModel):
+    username: str
+    email: str
+    password: str
+    role: str = "user"
+
+class LoginUser(BaseModel):
+    email: str
+    password: str
+
+
+@app.get("/")
+def read_root():
+    return {"message": "THE SHIPSAR CHAT BOT IS WORKING"}
+
+@app.post("/chat", tags=["CLIENT"])
+def reply_bot(input_data: ChatInput, current_user: dict = Depends(get_current_user)):
+    # API endpoint for chatbot responses with session tracking. 
+    try:
+        user_id = str(current_user["_id"])
+        session_id = get_user_session(user_id)
+        response = chatter(user_id, session_id, input_data.input)
+        return response
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.get("/chat", tags=["CLIENT"])
+def fetch_history(
+    current_user: dict = Depends(get_current_user),       
+    page: int = Query(1, alias="page", ge=1),
+    page_size: int = Query(10, alias="page_size", ge=1, le=100)):
+    # API endpoint for chatbot history. 
+    try:
+    #     user_id = str(current_user["_id"])
+    #     session_id = get_user_session(user_id)
+    #     return response
+        print("current_user => ",current_user)
+        # skip = (page - 1) * page_size
+        # messages = list(chat_history_collection.find({"user_id": current_user[""]}, {"_id": 0}).skip(skip).limit(page_size))
+
+        # return {
+        #     "message": f"Chats for session {session_id} retrieved successfully!",
+        #     "page": page,
+        #     "page_size": page_size,
+        #     "total_chats": chat_history_collection.count_documents({"session_id": session_id}),
+        #     "data": messages
+        # }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/auth/register", tags=["AUTH"])
+def register(user: RegisterUser):
+    response = register_user(user.username, user.email, user.password)
+    if "error" in response:
+        raise HTTPException(status_code=400, detail=response["error"])
+    return response
+
+@app.post("/auth/login", tags=["AUTH"])
+def login(user: LoginUser):
+    response = login_user(user.email, user.password)
+    if "error" in response:
+        raise HTTPException(status_code=400, detail=response["error"])
+    return response
+
+### ADMIN ONLY ROUTES
+
+# ✅ 1. Fetch all messages from a specific session (ADMIN-ONLY)
+@app.get("/admin/chat/{session_id}", tags=["ADMIN"])
+def get_chat_messages(
+    session_id: str,
+    current_user: dict = Depends(admin_required),
+    page: int = Query(1, alias="page", ge=1),
+    page_size: int = Query(10, alias="page_size", ge=1, le=100)
+):
+    skip = (page - 1) * page_size
+    messages = list(chat_history_collection.find({"session_id": session_id}, {"_id": 0}).skip(skip).limit(page_size))
+
+    return {
+        "message": f"Chats for session {session_id} retrieved successfully!",
+        "page": page,
+        "page_size": page_size,
+        "total_chats": chat_history_collection.count_documents({"session_id": session_id}),
+        "data": messages
+    }
+
+# ✅ 2. Fetch all chat sessions (ADMIN-ONLY)
+@app.get("/admin/all-chats", tags=["ADMIN"])
+def read_all_chats(
+    current_user: dict = Depends(admin_required),
+    page: int = Query(1, alias="page", ge=1),
+    page_size: int = Query(10, alias="page_size", ge=1, le=100)
+):
+    skip = (page - 1) * page_size
+    sessions = list(sessions_collection.find({}, {"_id": 0}).skip(skip).limit(page_size))
+    
+    return {
+        "message": "Session list retrieved successfully!",
+        "page": page,
+        "page_size": page_size,
+        "total_sessions": sessions_collection.count_documents({}),
+        "data": sessions
+    }
+
+# ✅ 3. Fetch all users (ADMIN-ONLY)
+@app.get("/admin/all-users", tags=["ADMIN"])
+def get_all_users(
+    current_user: dict = Depends(admin_required),
+    page: int = Query(1, alias="page", ge=1),
+    page_size: int = Query(10, alias="page_size", ge=1, le=100)
+):
+    skip = (page - 1) * page_size
+    users = list(users_collection.find({}, {"_id": 0, "password": 0}).skip(skip).limit(page_size))
+
+    return {
+        "message": "User list retrieved successfully!",
+        "page": page,
+        "page_size": page_size,
+        "total_users": users_collection.count_documents({}),
+        "data": users
+    }
+
+# ✅ 4. Count users (ADMIN-ONLY)
+@app.get("/admin/count/users", tags=["ADMIN"])
+def count_users(current_user: dict = Depends(admin_required)):
+    total_users = users_collection.count_documents({})
+    return {"total_users": total_users}
+
+# ✅ 5. Count sessions (ADMIN-ONLY)
+@app.get("/admin/count/sessions", tags=["ADMIN"])
+def count_sessions(current_user: dict = Depends(admin_required)):
+    total_sessions = sessions_collection.count_documents({})
+    return {"total_sessions": total_sessions}
+

@@ -1,0 +1,14 @@
+{
+  "message": "Chats for session xyz-1 retrieved successfully!",
+  "page": 1,
+  "page_size": 3,
+  "total_chats": 50,
+  "data": [
+    { "message": "Hello!", "timestamp": "2025-03-30T12:01:00" },
+    { "message": "How are you?", "timestamp": "2025-03-30T12:01:05" },
+    { "message": "I'm doing well, thanks for asking!", "timestamp": "2025-03-30T12:01:15" },
+    { "message": "Can you help me with something?", "timestamp": "2025-03-30T12:01:30" },
+    { "message": "Of course! What do you need help with?", "timestamp": "2025-03-30T12:01:45" }
+  ]
+}
+

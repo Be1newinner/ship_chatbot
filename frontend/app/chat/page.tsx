@@ -7,99 +7,122 @@ import { Message } from "@/components/chat/message"
 import { ChatInput } from "@/components/chat/chat-input"
 import { useAuth } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
-import { getChatHistory, sendChatMessage, type ChatHistoryItem } from "@/lib/api"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { AlertCircle } from "lucide-react"
+import { LogOut } from 'lucide-react'
+import apiClient from "@/lib/api-client"
+import Link from "next/link"
 
-type DisplayMessage = {
+type ChatMessage = {
   id: string
   content: string
   isUser: boolean
-  timestamp: Date | string
+  timestamp: Date
 }
 
 export default function ChatPage() {
-  const [messages, setMessages] = useState<DisplayMessage[]>([])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [isLoadingHistory, setIsLoadingHistory] = useState(true)
-  const [error, setError] = useState("")
+  const [sessionId, setSessionId] = useState<string | null>(null)
   const { user, logout } = useAuth()
   const router = useRouter()
 
+  // Fetch or create a chat session on component mount
   useEffect(() => {
-    // Load chat history when component mounts
-    const loadChatHistory = async () => {
+    const fetchOrCreateSession = async () => {
       try {
-        const response = await getChatHistory()
+        // Try to get an existing session from localStorage
+        const storedSessionId = localStorage.getItem('chatSessionId');
 
-        // Transform API response to our message format
-        const historyMessages = response.data.flatMap((item: ChatHistoryItem) => [
+        if (storedSessionId) {
+          setSessionId(storedSessionId);
+          // Fetch messages for this session
+          await fetchMessages(storedSessionId);
+        } else {
+          // Add welcome message
+          setMessages([
+            {
+              id: "welcome",
+              content: "Hello! How can I help you today?",
+              isUser: false,
+              timestamp: new Date(),
+            },
+          ]);
+        }
+      } catch (error) {
+        console.error("Failed to initialize chat session:", error);
+        // Fallback to a local session
+        setMessages([
           {
-            id: `${item._id}-user`,
-            content: item.user,
-            isUser: true,
-            timestamp: item.timestamp,
-          },
-          {
-            id: `${item._id}-assistant`,
-            content: item.assistant,
+            id: "welcome",
+            content: "Hello! How can I help you today?",
             isUser: false,
-            timestamp: item.timestamp,
+            timestamp: new Date(),
           },
-        ])
-
-        setMessages(historyMessages)
-      } catch (err: any) {
-        console.error("Failed to load chat history:", err)
-        setError("Failed to load chat history. Please try refreshing the page.")
-      } finally {
-        setIsLoadingHistory(false)
+        ]);
       }
-    }
+    };
 
-    loadChatHistory()
-  }, [])
+    if (user) {
+      fetchOrCreateSession();
+    }
+  }, [user]);
+
+  // Fetch messages for a session
+  const fetchMessages = async (sid: string) => {
+    try {
+      const response = await apiClient.get(`/chat/${sid}`);
+      const fetchedMessages = response.data.data.map((msg: any) => ({
+        id: msg.id || Date.now().toString(),
+        content: msg.message,
+        isUser: msg.role === 'user',
+        timestamp: new Date(msg.timestamp),
+      }));
+
+      setMessages(fetchedMessages);
+    } catch (error) {
+      console.error("Failed to fetch messages:", error);
+    }
+  };
 
   const handleSendMessage = async (content: string) => {
-    setError("")
-
-    // Add user message immediately for better UX
-    const userMessage: DisplayMessage = {
-      id: `user-${Date.now()}`,
+    if (!sessionId) return;
+  
+    const userMessage: ChatMessage = {
+      id: Date.now().toString(),
       content,
       isUser: true,
       timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setIsLoading(true)
-
+    };
+  
+    setMessages((prev) => [...prev, userMessage]);  // ✅ Ensuring state updates
+    setIsLoading(true);
+    
     try {
-      // Send message to API
-      const response = await sendChatMessage(content)
-
-      // Add bot response
-      const botMessage: DisplayMessage = {
-        id: `assistant-${Date.now()}`,
-        content: response.data,
+      const response = await apiClient.post(`/chat/`, { input: content });
+  
+      console.log("API Response:", response.data); // ✅ Debugging API response
+  
+      const botMessage: ChatMessage = {
+        id: (Date.now() + 1).toString(),
+        content: response.data.assistant || "Sorry, I couldn't process your request.",
         isUser: false,
         timestamp: new Date(),
-      }
-
-      setMessages((prev) => [...prev, botMessage])
-    } catch (err: any) {
-      console.error("Failed to send message:", err)
-      setError("Failed to send message. Please try again.")
+      };
+  
+      setMessages((prev) => [...prev, botMessage]); // ✅ Ensuring state updates
+    } catch (error) {
+      console.error("Failed to send message:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
+  
 
   const handleLogout = () => {
-    logout()
-    router.push("/login")
-  }
+    // Clear chat session
+    localStorage.removeItem('chatSessionId');
+    logout();
+    router.push("/login");
+  };
 
   return (
     <ProtectedRoute>
@@ -107,33 +130,29 @@ export default function ChatPage() {
         <header className="flex items-center justify-between border-b px-6 py-4">
           <h1 className="text-xl font-bold">Chat Bot</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground">Logged in as {user?.email}</span>
+            <span className="text-sm text-muted-foreground">Logged in as {user?.name}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </Button>
+            <Link href="/admin/dashboard">
+              <Button variant="outline" size="sm">
+                ADMIN
+              </Button>
+            </Link>
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-6">
           <div className="mx-auto max-w-3xl">
-            {isLoadingHistory ? (
-              <div className="flex justify-center my-8">
-                <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-              </div>
-            ) : messages.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">No messages yet. Start a conversation!</div>
-            ) : (
-              messages.map((message) => (
-                <Message
-                  key={message.id}
-                  content={message.content}
-                  isUser={message.isUser}
-                  timestamp={message.timestamp}
-                />
-              ))
-            )}
-
+            {messages.map((message) => (
+              <Message
+                key={message.id}
+                content={message.content}
+                isUser={message.isUser}
+                timestamp={message.timestamp}
+              />
+            ))}
             {isLoading && (
               <div className="flex justify-start mb-4">
                 <div className="bg-muted rounded-lg px-4 py-2">
@@ -145,13 +164,6 @@ export default function ChatPage() {
                 </div>
               </div>
             )}
-
-            {error && (
-              <Alert variant="destructive" className="mb-4">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
           </div>
         </div>
 
@@ -162,6 +174,6 @@ export default function ChatPage() {
         </div>
       </div>
     </ProtectedRoute>
-  )
+  );
 }
 

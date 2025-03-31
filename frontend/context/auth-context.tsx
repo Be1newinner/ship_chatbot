@@ -1,23 +1,26 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
-import { login as apiLogin, register as apiRegister } from "@/lib/api"
+import { jwtDecode, JwtPayload } from "jwt-decode"
+import apiClient from "@/lib/api-client"
 
 type User = {
   id: string
+  name: string
   email: string
   role: "user" | "admin"
   token: string
+  tokenExpiry: number
 }
 
 type AuthContextType = {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (username: string, email: string, password: string, phone: string) => Promise<void>
+  register: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
+  isTokenExpired: () => boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -29,70 +32,135 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check if user is logged in from localStorage
     const storedUser = localStorage.getItem("user")
-    const token = localStorage.getItem("token")
+    if (storedUser) {
+      const parsedUser = JSON.parse(storedUser)
 
-    if (storedUser && token) {
-      try {
-        const userData = JSON.parse(storedUser)
-        setUser({ ...userData, token })
-      } catch (error) {
-        console.error("Failed to parse user data:", error)
-        localStorage.removeItem("user")
-        localStorage.removeItem("token")
+      // Check if token is expired
+      if (parsedUser.token) {
+        try {
+          const decodedToken = jwtDecode(parsedUser.token)
+          const currentTime = Date.now() / 1000
+
+          if (decodedToken.exp && decodedToken.exp < currentTime) {
+            // Token is expired, log out
+            localStorage.removeItem("user")
+            setUser(null)
+          } else {
+            setUser(parsedUser)
+          }
+        } catch (error) {
+          // Invalid token, log out
+          localStorage.removeItem("user")
+          setUser(null)
+        }
+      } else {
+        setUser(parsedUser)
       }
     }
-
     setLoading(false)
   }, [])
+
+  const isTokenExpired = () => {
+    if (!user || !user.token) return true
+
+    try {
+      const decodedToken = jwtDecode(user.token)
+      const currentTime = Date.now() / 1000
+
+      return decodedToken.exp ? decodedToken.exp < currentTime : true
+    } catch (error) {
+      return true
+    }
+  }
 
   const login = async (email: string, password: string) => {
     setLoading(true)
 
     try {
-      const response = await apiLogin(email, password)
-
-      const userData = {
-        id: response.data._id,
+      // Make API call to login endpoint
+      const response = await apiClient.post('/auth/login', {
         email,
-        // Assuming role is included in the token and decoded on the client
-        // In a real app, you might want to decode the JWT or have the role in the response
-        role: email.includes("admin") ? ("admin" as const) : ("user" as const),
-        token: response.data.accessToken,
+        password
+      });
+
+      // Process the response
+      const { token, data: userData } = response.data;
+
+      // Decode token to get expiry
+      const decodedToken = jwtDecode(token);
+      console.log({ parsedToken: decodedToken, userData })
+      const tokenExpiry = decodedToken.exp || 0;
+
+      type userJWTPayload = JwtPayload & {
+        role: string
       }
 
-      setUser(userData)
-      localStorage.setItem("user", JSON.stringify(userData))
-      localStorage.setItem("token", response.data.accessToken)
+      // Create user object with token
+      const userWithToken = {
+        id: userData._id,
+        name: userData.name,
+        email: userData.email,
+        role: (decodedToken as userJWTPayload)?.role || "user",
+        token,
+        tokenExpiry
+      };
+
+      // Save to state and localStorage
+      setUser(userWithToken);
+      localStorage.setItem("user", JSON.stringify(userWithToken));
     } catch (error) {
-      console.error("Login failed:", error)
-      throw error
+      console.error("Login failed:", error);
+      throw new Error("Invalid credentials");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
-  const register = async (username: string, email: string, password: string, phone: string) => {
+  const register = async (name: string, email: string, password: string) => {
     setLoading(true)
 
     try {
-      await apiRegister(username, email, password, phone)
-      // After registration, log the user in
-      await login(email, password)
+      // Make API call to register endpoint
+      const response = await apiClient.post('/auth/register', {
+        name,
+        email,
+        password
+      });
+
+      // Process the response
+      const { token, user: userData } = response.data;
+
+      // Decode token to get expiry
+      const decodedToken = jwtDecode(token);
+      const tokenExpiry = decodedToken.exp || 0;
+
+      // Create user object with token
+      const userWithToken = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        role: userData.role || "user",
+        token,
+        tokenExpiry
+      };
+
+      // Save to state and localStorage
+      setUser(userWithToken);
+      localStorage.setItem("user", JSON.stringify(userWithToken));
     } catch (error) {
-      console.error("Registration failed:", error)
-      throw error
+      console.error("Registration failed:", error);
+      throw new Error("Registration failed");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   const logout = () => {
     setUser(null)
     localStorage.removeItem("user")
-    localStorage.removeItem("token")
   }
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, loading, login, register, logout, isTokenExpired }}>{children}</AuthContext.Provider>
 }
 
 export function useAuth() {
