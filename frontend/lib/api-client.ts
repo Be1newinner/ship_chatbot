@@ -3,7 +3,8 @@ import { jwtDecode } from 'jwt-decode';
 
 // Create an Axios instance with the correct base URL
 const apiClient = axios.create({
-  baseURL: 'https://api.shipsar.com/chatbot',
+  // baseURL: 'https://api.shipsar.com/chatbot',
+  baseURL: 'http://localhost:8000',
   headers: {
     'Content-Type': 'application/json',
   },
