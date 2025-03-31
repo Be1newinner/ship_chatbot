@@ -8,6 +8,8 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from beanie import PydanticObjectId
 from app.models.session import ChatSession
 from app.models.user import User
+from pydantic import BaseModel
+# from bson import ObjectId
 
 load_dotenv()
 security = HTTPBearer()
@@ -58,11 +60,22 @@ async def get_user_session(user_id: PydanticObjectId):
     
     return session.id
 
+class UserView(BaseModel):
+    # id: ObjectId
+    role: str
+
+    class Settings:
+        projection = {"id": 1, "role": 1}
+
+
 # ✅ ADMIN-ONLY Middleware using Beanie
 async def admin_required(current_user: dict = Depends(get_current_user)):
-    user = await User.find_one(User.id == current_user["id"])
+    print(current_user.id)
+    user = await User.find_one(User.id == current_user.id).project(UserView)
+   
+    print(user)
     
     if not user or user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admins can access this resource.")
-    
+    # return current_user
     return current_user

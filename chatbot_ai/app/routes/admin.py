@@ -3,7 +3,7 @@ from beanie import PydanticObjectId
 from app.utils.security import admin_required
 from app.services.admin_service import (
     fetch_chat_messages,
-    fetch_all_chats,
+    fetch_all_sessions,
     fetch_all_users,
     count_total_users,
     count_total_sessions
@@ -22,13 +22,13 @@ async def get_chat_messages(
     return await fetch_chat_messages(session_id, page, page_size)
 
 # ✅ 2. Fetch all chat sessions (ADMIN-ONLY)
-@router.get("/all-chats")
-async def read_all_chats(
+@router.get("/all-sessions")
+async def read_all_sessions(
     current_user: dict = Depends(admin_required),
     page: int = Query(1, ge=1),
     page_size: int = Query(10, ge=1, le=100)
 ):
-    return await fetch_all_chats(page, page_size)
+    return await fetch_all_sessions(page, page_size)
 
 # ✅ 3. Fetch all users (ADMIN-ONLY)
 @router.get("/all-users")

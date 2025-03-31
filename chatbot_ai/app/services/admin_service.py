@@ -17,7 +17,7 @@ async def fetch_chat_messages(session_id: PydanticObjectId, page: int, page_size
         "data": messages
     }
 
-async def fetch_all_chats(page: int, page_size: int):
+async def fetch_all_sessions(page: int, page_size: int):
     # Fetch all chat sessions.
     skip = (page - 1) * page_size
     sessions = await ChatSession.find_all().skip(skip).limit(page_size).to_list()
@@ -34,7 +34,7 @@ async def fetch_all_chats(page: int, page_size: int):
 async def fetch_all_users(page: int, page_size: int):
     # Fetch all users (excluding sensitive fields).
     skip = (page - 1) * page_size
-    users = await User.find_all().skip(skip).limit(page_size).project(User.username, User.email, User.role).to_list()
+    users = await User.find_all().skip(skip).limit(page_size).to_list()
     total_users = await User.find_all().count()
 
     return {
