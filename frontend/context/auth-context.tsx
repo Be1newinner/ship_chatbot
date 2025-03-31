@@ -2,14 +2,13 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-import { jwtDecode, JwtPayload } from "jwt-decode"
+import { jwtDecode, type JwtPayload } from "jwt-decode"
 import apiClient from "@/lib/api-client"
 
 type User = {
   id: string
-  name: string
   email: string
-  role: "user" | "admin"
+  role: string
   token: string
   tokenExpiry: number
 }
@@ -18,7 +17,7 @@ type AuthContextType = {
   user: User | null
   loading: boolean
   login: (email: string, password: string) => Promise<void>
-  register: (name: string, email: string, password: string) => Promise<void>
+  register: (username: string, email: string, password: string) => Promise<void>
   logout: () => void
   isTokenExpired: () => boolean
 }
@@ -78,80 +77,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       // Make API call to login endpoint
-      const response = await apiClient.post('/auth/login', {
+      const response = await apiClient.post("/auth/login", {
         email,
-        password
-      });
+        password,
+      })
 
-      // Process the response
-      const { token, data: userData } = response.data;
+      // Process the response based on new structure
+      const { token, data } = response.data
 
-      // Decode token to get expiry
-      const decodedToken = jwtDecode(token);
-      console.log({ parsedToken: decodedToken, userData })
-      const tokenExpiry = decodedToken.exp || 0;
-
-      type userJWTPayload = JwtPayload & {
-        role: string
-      }
+      // Decode token to get expiry and role
+      const decodedToken = jwtDecode<JwtPayload & { role?: string; user_id?: string }>(token)
+      const tokenExpiry = decodedToken.exp || 0
+      const role = decodedToken.role || "user"
 
       // Create user object with token
       const userWithToken = {
-        id: userData._id,
-        name: userData.name,
-        email: userData.email,
-        role: (decodedToken as userJWTPayload)?.role || "user",
+        id: data.id || decodedToken.user_id || "",
+        email: data.email,
+        role,
         token,
-        tokenExpiry
-      };
+        tokenExpiry,
+      }
 
       // Save to state and localStorage
-      setUser(userWithToken);
-      localStorage.setItem("user", JSON.stringify(userWithToken));
+      setUser(userWithToken)
+      localStorage.setItem("user", JSON.stringify(userWithToken))
     } catch (error) {
-      console.error("Login failed:", error);
-      throw new Error("Invalid credentials");
+      console.error("Login failed:", error)
+      throw new Error("Invalid credentials")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
-  const register = async (name: string, email: string, password: string) => {
+  const register = async (username: string, email: string, password: string) => {
     setLoading(true)
 
     try {
-      // Make API call to register endpoint
-      const response = await apiClient.post('/auth/register', {
-        name,
+      // Make API call to register endpoint with updated structure
+      await apiClient.post("/auth/register", {
+        username,
         email,
-        password
-      });
+        password,
+      })
 
-      // Process the response
-      const { token, user: userData } = response.data;
-
-      // Decode token to get expiry
-      const decodedToken = jwtDecode(token);
-      const tokenExpiry = decodedToken.exp || 0;
-
-      // Create user object with token
-      const userWithToken = {
-        id: userData.id,
-        name: userData.name,
-        email: userData.email,
-        role: userData.role || "user",
-        token,
-        tokenExpiry
-      };
-
-      // Save to state and localStorage
-      setUser(userWithToken);
-      localStorage.setItem("user", JSON.stringify(userWithToken));
+      // Registration successful, now login with the same credentials
+      await login(email, password)
     } catch (error) {
-      console.error("Registration failed:", error);
-      throw new Error("Registration failed");
+      console.error("Registration failed:", error)
+      throw new Error("Registration failed")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
@@ -160,7 +136,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem("user")
   }
 
-  return <AuthContext.Provider value={{ user, loading, login, register, logout, isTokenExpired }}>{children}</AuthContext.Provider>
+  return (
+    <AuthContext.Provider value={{ user, loading, login, register, logout, isTokenExpired }}>
+      {children}
+    </AuthContext.Provider>
+  )
 }
 
 export function useAuth() {

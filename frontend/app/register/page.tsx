@@ -9,10 +9,10 @@ import { useAuth } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { AlertCircle } from 'lucide-react'
+import { AlertCircle } from "lucide-react"
 
 export default function RegisterPage() {
-  const [name, setName] = useState("")
+  const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -33,7 +33,7 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      await register(name, email, password)
+      await register(username, email, password)
       router.push("/chat")
     } catch (err: any) {
       setError(err.message || "Registration failed. Please try again.")
@@ -58,10 +58,16 @@ export default function RegisterPage() {
               </div>
             )}
             <div className="space-y-2">
-              <label htmlFor="name" className="text-sm font-medium">
-                Name
+              <label htmlFor="username" className="text-sm font-medium">
+                Username
               </label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required placeholder="John Doe" />
+              <Input
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                required
+                placeholder="johndoe"
+              />
             </div>
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">

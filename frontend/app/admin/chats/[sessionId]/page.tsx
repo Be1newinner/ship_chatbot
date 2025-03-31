@@ -11,7 +11,11 @@ import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 
 interface ChatMessage {
+  _id: string
+  session_id: string
+  user_id: string
   message: string
+  response: string
   timestamp: string
 }
 
@@ -26,8 +30,13 @@ export default function ChatDetailPage() {
 
   const columns = [
     {
-      header: "Message",
+      header: "User Message",
       accessor: "message",
+      className: "max-w-md truncate",
+    },
+    {
+      header: "Bot Response",
+      accessor: "response",
       className: "max-w-md truncate",
     },
     {

@@ -1,14 +1,49 @@
 {
-  "message": "Chats for session xyz-1 retrieved successfully!",
+  "message": "Chats for this session retrieved successfully!",
   "page": 1,
-  "page_size": 3,
-  "total_chats": 50,
+  "page_size": 10,
+  "total_chats": 5,
   "data": [
-    { "message": "Hello!", "timestamp": "2025-03-30T12:01:00" },
-    { "message": "How are you?", "timestamp": "2025-03-30T12:01:05" },
-    { "message": "I'm doing well, thanks for asking!", "timestamp": "2025-03-30T12:01:15" },
-    { "message": "Can you help me with something?", "timestamp": "2025-03-30T12:01:30" },
-    { "message": "Of course! What do you need help with?", "timestamp": "2025-03-30T12:01:45" }
+    {
+      "_id": "chat1",
+      "session_id": "xyz-1",
+      "user_id": "123",
+      "message": "Hello!",
+      "response": "Hi there! How can I help you today?",
+      "timestamp": "2025-03-30T12:01:00"
+    },
+    {
+      "_id": "chat2",
+      "session_id": "xyz-1",
+      "user_id": "123",
+      "message": "How are you?",
+      "response": "I'm doing well, thanks for asking! How about you?",
+      "timestamp": "2025-03-30T12:01:05"
+    },
+    {
+      "_id": "chat3",
+      "session_id": "xyz-1",
+      "user_id": "123",
+      "message": "I'm doing well, thanks for asking!",
+      "response": "That's great to hear! Is there anything I can help you with today?",
+      "timestamp": "2025-03-30T12:01:15"
+    },
+    {
+      "_id": "chat4",
+      "session_id": "xyz-1",
+      "user_id": "123",
+      "message": "Can you help me with something?",
+      "response": "Of course! I'd be happy to help. What do you need assistance with?",
+      "timestamp": "2025-03-30T12:01:30"
+    },
+    {
+      "_id": "chat5",
+      "session_id": "xyz-1",
+      "user_id": "123",
+      "message": "I need help with my project",
+      "response": "I'd be glad to help with your project. Could you please provide more details about what you're working on and what kind of help you need?",
+      "timestamp": "2025-03-30T12:01:45"
+    }
   ]
 }
 

@@ -12,24 +12,28 @@ export function getOfflineData(endpoint: string, params: Record<string, any> = {
   if (!useOfflineMode) return null
 
   // Parse the endpoint to determine which data to return
-  if (endpoint.startsWith("/all-users")) {
+  if (endpoint.startsWith("/admin/all-users")) {
     return usersData
   }
 
-  if (endpoint.startsWith("/all-chats")) {
+  if (endpoint.startsWith("/admin/all-sessions")) {
     return chatsData
+  }
+
+  if (endpoint.startsWith("/admin/chat/")) {
+    return chatDetailData
+  }
+
+  if (endpoint === "/admin/count/users") {
+    return userCountData
+  }
+
+  if (endpoint === "/admin/count/sessions") {
+    return sessionCountData
   }
 
   if (endpoint.startsWith("/chat/")) {
     return chatDetailData
-  }
-
-  if (endpoint === "/count/users") {
-    return userCountData
-  }
-
-  if (endpoint === "/count/sessions") {
-    return sessionCountData
   }
 
   return null

@@ -7,8 +7,10 @@ import { useUsers } from "@/hooks/use-api"
 import { format } from "date-fns"
 
 interface User {
+  _id: string
   username: string
   email: string
+  role: string
   created_at: string
 }
 
@@ -28,6 +30,10 @@ export default function AdminUsersPage() {
     {
       header: "Email",
       accessor: "email",
+    },
+    {
+      header: "Role",
+      accessor: "role",
     },
     {
       header: "Created At",

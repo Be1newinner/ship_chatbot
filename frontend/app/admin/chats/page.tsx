@@ -8,14 +8,14 @@ import { useChatSessions } from "@/hooks/use-api"
 import { format } from "date-fns"
 
 interface ChatSession {
+  _id: string
   user_id: string
-  session_id: string
   created_at: string
 }
 
 export default function AdminChatsPage() {
   const [page, setPage] = useState(1)
-  const [pageSize] = useState(5)
+  const [pageSize] = useState(10)
   const router = useRouter()
 
   const { data, isLoading } = useChatSessions(page, pageSize)
@@ -23,13 +23,13 @@ export default function AdminChatsPage() {
   const totalSessions = data?.total_sessions || 0
 
   const handleRowClick = (session: ChatSession) => {
-    router.push(`/admin/chats/${session.session_id}`)
+    router.push(`/admin/chats/${session._id}`)
   }
 
   const columns = [
     {
       header: "Session ID",
-      accessor: "session_id",
+      accessor: "_id",
     },
     {
       header: "User ID",

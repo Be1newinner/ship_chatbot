@@ -2,13 +2,13 @@
   "message": "Session list retrieved successfully!",
   "page": 1,
   "page_size": 5,
-  "total_sessions": 25,
+  "total_sessions": 5,
   "data": [
-    { "user_id": "123", "session_id": "xyz-1", "created_at": "2025-03-30T12:00:00" },
-    { "user_id": "124", "session_id": "xyz-2", "created_at": "2025-03-30T12:05:00" },
-    { "user_id": "125", "session_id": "xyz-3", "created_at": "2025-03-29T14:30:00" },
-    { "user_id": "126", "session_id": "xyz-4", "created_at": "2025-03-28T09:15:00" },
-    { "user_id": "127", "session_id": "xyz-5", "created_at": "2025-03-27T16:45:00" }
+    { "_id": "session1", "user_id": "user1", "created_at": "2025-03-30T12:00:00" },
+    { "_id": "session2", "user_id": "user2", "created_at": "2025-03-30T12:05:00" },
+    { "_id": "session3", "user_id": "user3", "created_at": "2025-03-29T14:30:00" },
+    { "_id": "session4", "user_id": "user4", "created_at": "2025-03-28T09:15:00" },
+    { "_id": "session5", "user_id": "user5", "created_at": "2025-03-27T16:45:00" }
   ]
 }
 

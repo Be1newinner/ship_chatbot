@@ -1,10 +1,9 @@
-import { API_URL } from '@/utils/api';
 import axios from 'axios';
 import { jwtDecode } from 'jwt-decode';
 
 // Create an Axios instance with the correct base URL
 const apiClient = axios.create({
-  baseURL: API_URL,
+  baseURL: 'https://api.shipsar.com/chatbot',
   headers: {
     'Content-Type': 'application/json',
   },

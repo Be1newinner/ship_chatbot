@@ -1,79 +1,86 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import apiClient from '@/lib/api-client';
-import { getOfflineData, isOfflineMode } from '@/lib/offline-data';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import apiClient from "@/lib/api-client"
+import { getOfflineData, isOfflineMode } from "@/lib/offline-data"
 
 // Generic fetch function that handles offline mode
 async function fetchData<T>(endpoint: string, params: Record<string, any> = {}): Promise<T> {
   // Check if we're in offline mode
   if (isOfflineMode()) {
-    const offlineData = getOfflineData(endpoint, params);
+    const offlineData = getOfflineData(endpoint, params)
     if (offlineData) {
-      return offlineData as T;
+      return offlineData as T
     }
   }
-  
+
   // If not in offline mode or no offline data available, make the API call
-  const queryString = new URLSearchParams(params).toString();
-  const url = queryString ? `${endpoint}?${queryString}` : endpoint;
-  
-  const response = await apiClient.get<T>(url);
-  return response.data;
+  const response = await apiClient.get<T>(endpoint, { params })
+  return response.data
 }
 
-// Hook for fetching users
-export function useUsers(page: number = 1, pageSize: number = 10) {
+// Hook for fetching users (admin)
+export function useUsers(page = 1, pageSize = 10) {
   return useQuery({
-    queryKey: ['users', page, pageSize],
-    queryFn: () => fetchData('/all-users', { page, page_size: pageSize }),
-  });
+    queryKey: ["users", page, pageSize],
+    queryFn: () => fetchData("/admin/all-users", { page, page_size: pageSize }),
+  })
 }
 
-// Hook for fetching chat sessions
-export function useChatSessions(page: number = 1, pageSize: number = 5) {
+// Hook for fetching chat sessions (admin)
+export function useChatSessions(page = 1, pageSize = 5) {
   return useQuery({
-    queryKey: ['chats', page, pageSize],
-    queryFn: () => fetchData('/all-chats', { page, page_size: pageSize }),
-  });
+    queryKey: ["sessions", page, pageSize],
+    queryFn: () => fetchData("/admin/all-sessions", { page, page_size: pageSize }),
+  })
 }
 
-// Hook for fetching chat details
-export function useChatDetails(sessionId: string, page: number = 1, pageSize: number = 10) {
+// Hook for fetching chat details for a session (admin)
+export function useChatDetails(sessionId: string, page = 1, pageSize = 10) {
   return useQuery({
-    queryKey: ['chat', sessionId, page, pageSize],
-    queryFn: () => fetchData(`/chat/${sessionId}`, { page, page_size: pageSize }),
+    queryKey: ["adminChat", sessionId, page, pageSize],
+    queryFn: () => fetchData(`/admin/chat/${sessionId}`, { page, page_size: pageSize }),
     enabled: !!sessionId,
-  });
+  })
 }
 
-// Hook for fetching user count
+// Hook for fetching chat history (user)
+export function useChatHistory(page = 1, pageSize = 10) {
+  return useQuery({
+    queryKey: ["chatHistory", page, pageSize],
+    queryFn: () => fetchData("/chat/", { page, page_size: pageSize }),
+  })
+}
+
+// Hook for fetching user count (admin)
 export function useUserCount() {
   return useQuery({
-    queryKey: ['userCount'],
-    queryFn: () => fetchData('/count/users'),
-  });
+    queryKey: ["userCount"],
+    queryFn: () => fetchData("/admin/count/users"),
+  })
 }
 
-// Hook for fetching session count
+// Hook for fetching session count (admin)
 export function useSessionCount() {
   return useQuery({
-    queryKey: ['sessionCount'],
-    queryFn: () => fetchData('/count/sessions'),
-  });
+    queryKey: ["sessionCount"],
+    queryFn: () => fetchData("/admin/count/sessions"),
+  })
 }
 
-// Hook for sending a chat message
+// Hook for sending a chat message (user)
 export function useSendMessage() {
-  const queryClient = useQueryClient();
-  
+  const queryClient = useQueryClient()
+
   return useMutation({
-    mutationFn: async ({ sessionId, message }: { sessionId: string, message: string }) => {
-      const response = await apiClient.post(`/chat/${sessionId}`, { message });
-      return response.data;
+    mutationFn: async (message: string) => {
+      const response = await apiClient.post("/chat/", null, {
+        params: { input: message },
+      })
+      return response.data
     },
-    onSuccess: (data, variables) => {
-      // Invalidate chat details query to refresh the chat
-      queryClient.invalidateQueries({ queryKey: ['chat', variables.sessionId] });
+    onSuccess: () => {
+      // Invalidate chat history query to refresh the chat
+      queryClient.invalidateQueries({ queryKey: ["chatHistory"] })
     },
-  });
+  })
 }
 

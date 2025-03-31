@@ -28,4 +28,3 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}) {
   }
 }
 
-export const API_URL = "http://localhost:8000"
