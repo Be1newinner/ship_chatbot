@@ -5,5 +5,5 @@ class ChatSession(Document):
     user_id: str
     created_at: datetime = datetime.utcnow()
 
-    class Config:
+    class Setting:
         collection = "sessions"

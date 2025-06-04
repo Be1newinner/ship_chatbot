@@ -1,4 +1,4 @@
-from beanie import Document, PydanticObjectId, before_event
+from beanie import Document, PydanticObjectId
 from pydantic import EmailStr, BaseModel, Field
 from datetime import datetime, timezone
 from typing import Optional
@@ -11,15 +11,8 @@ class User(Document):
     role: str = Field(default="user", frozen=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc), frozen=True)
 
-    class Config: 
+    class Setting:
         collection = "User"
-        json_schema_extra = {
-            "example": {
-                "username": "be1newinner",
-                "email": "be1newinner@gmail.com",
-                "password": "vijay123"
-            }
-        }
         
     @classmethod
     async def create_user(cls, user_data: dict):
@@ -33,6 +26,15 @@ class RegisterUser(BaseModel):
     email: str
     username: str
     password: str
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "username": "be1newinner",
+                "email": "be1newinner@gmail.com",
+                "password": "vijay123"
+            }
+        }
 
 class LoginUser(BaseModel):
     email: str

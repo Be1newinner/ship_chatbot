@@ -70,8 +70,8 @@ class UserView(BaseModel):
 
 # ✅ ADMIN-ONLY Middleware using Beanie
 async def admin_required(current_user: dict = Depends(get_current_user)):
-    print(current_user.id)
-    user = await User.find_one(User.id == current_user.id).project(UserView)
+    print(current_user["id"])
+    user = await User.find_one(User.id == current_user["id"]).project(UserView)
    
     print(user)
     

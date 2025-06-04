@@ -1,10 +1,9 @@
 import torch
 from datetime import datetime
 from beanie import PydanticObjectId
-from transformers import pipeline
+from transformers.pipelines import pipeline
 from app.models.chat import ChatHistory
-from app.models.session import ChatSession
-# from app.db import get_database  # Ensure a proper database connection
+from typing import List , Dict, Any, cast
 
 class ChatService:
     # Handles chatbot interaction, message retrieval, and database storage
@@ -41,12 +40,23 @@ class ChatService:
 
         # Append the new user message
         messages.append({"role": "user", "content": msg})
-        
+        assert self.pipe.tokenizer is not None
         prompt = self.pipe.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        outputs = self.pipe(prompt, max_new_tokens=150, do_sample=True, temperature=0.7, top_k=50, top_p=0.95)
+        raw_outputs = self.pipe(
+                                prompt,
+                                max_new_tokens=150,
+                                do_sample=True,
+                                temperature=0.7,
+                                top_k=50,
+                                top_p=0.95
+                            )
         
+        outputs: List[Dict[str, Any]] = cast(List[Dict[str, Any]], raw_outputs)
+
+        if not outputs or "generated_text" not in outputs[0]:
+            raise ValueError("Model response is missing 'generated_text'")
+
         raw_response = outputs[0]["generated_text"]
-        
         cleaned_response = self.clean_response(raw_response)
 
         await ChatHistory(

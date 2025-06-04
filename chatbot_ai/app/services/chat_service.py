@@ -1,9 +1,9 @@
-from transformers import pipeline
 from app.utils.chatbot import ChatService
 from fastapi import HTTPException
 from app.models.chat import ChatHistory
+from beanie import PydanticObjectId
 
-async def generate_response(session_id: str, user_id: str, msg: str):
+async def generate_response(session_id: PydanticObjectId, user_id: PydanticObjectId, msg: str):
      # API endpoint for chatbot responses with session tracking. 
     try:
         chat_service = ChatService()
