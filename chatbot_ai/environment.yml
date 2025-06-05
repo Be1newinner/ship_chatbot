@@ -3,12 +3,17 @@ channels:
   - conda-forge
   - pkgs/main
 dependencies:
-  - conda-forge::beanie=1.29.0
+  - bcrypt=4.3.0
   - fastapi=0.112.0
+  - pyjwt=2.10.1
   - python=3.11.11
   - python-dotenv=1.1.0
   - pytorch=2.5.1
   - transformers=4.51.3
   - uvicorn=0.32.1
+  - pydantic=2.11.1  
+  - pydantic-core=2.33.0 
+  - conda-forge::beanie=1.29.0
+  - conda-forge::accelerate=1.7.0
 
 prefix: "C:\\Users\\be1ne\\miniconda3\\envs\\ahc_chat_ai"
